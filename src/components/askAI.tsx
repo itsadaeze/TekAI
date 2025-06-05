@@ -43,7 +43,6 @@ type SpeechRecognitionType =
 const storedUser = localStorage.getItem("tekUser");
 const parsedUser = storedUser ? JSON.parse(storedUser) : null;
 
-
 // Component
 const AskAi: React.FC = () => {
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -53,7 +52,7 @@ const AskAi: React.FC = () => {
   );
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const[userName, setUserName] = useState(
+  const [userName, setUserName] = useState(
     parsedUser?.name || parsedUser?.given_name || "User"
   );
   const [showUsernameModal, setShowUsernameModal] = useState(!parsedUser);
@@ -71,7 +70,6 @@ const AskAi: React.FC = () => {
 
   const [typingText, setTypingText] = useState<string | null>(null);
   const [currentTypingIndex, setCurrentTypingIndex] = useState<number>(0);
-
 
   const suggestions = ["Give me a study tip", "Quiz me now", "Motivate me!"];
 
@@ -183,7 +181,7 @@ const AskAi: React.FC = () => {
       setCurrentTypingIndex(0);
     }
   }, [typingText, currentTypingIndex]);
-  
+
   const handleSendQuestion = async (text: string) => {
     if (!text.trim()) return;
 
@@ -192,9 +190,9 @@ const AskAi: React.FC = () => {
     setMessages(updatedMessages);
     setQuestionInput("");
     if (textareaRef.current) {
-      textareaRef.current.style.height = "48px"; 
+      textareaRef.current.style.height = "48px";
     }
-    
+
     setLoading(true);
 
     try {
@@ -230,7 +228,6 @@ const AskAi: React.FC = () => {
 
       setTypingText(aiText);
       setCurrentTypingIndex(0);
-
 
       const today = new Date().toDateString();
       const newEntry = { question: text, answer: aiText };
@@ -510,6 +507,3 @@ const AskAi: React.FC = () => {
 };
 
 export default AskAi;
-
-
-
