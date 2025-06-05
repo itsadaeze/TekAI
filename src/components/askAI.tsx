@@ -418,7 +418,7 @@ const AskAi: React.FC = () => {
                 key={index}
                 className={`px-4 py-2 rounded-2xl fade-in ${
                   msg.sender === "user"
-                    ? "bg-[#3a3838] ml-auto w-[0%] md:w-[30%] text-gray-400 wrap-break-word"
+                    ? "bg-[#3a3838] ml-auto w-[70%] md:w-[30%] text-gray-400 wrap-break-word"
                     : "bg-[#1e1c1c] mr-auto text-gray-400 "
                 }`}
               >
