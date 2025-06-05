@@ -42,7 +42,7 @@ type SpeechRecognitionType =
 // Get user from localStorage
 const storedUser = localStorage.getItem("tekUser");
 const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-const userName = parsedUser?.name || parsedUser?.given_name || "User";
+
 
 // Component
 const AskAi: React.FC = () => {
@@ -53,6 +53,9 @@ const AskAi: React.FC = () => {
   );
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
+  const[userName, setUserName] = useState(
+    parsedUser?.name || parsedUser?.given_name || "User"
+  );
   const [showUsernameModal, setShowUsernameModal] = useState(!parsedUser);
   const [tempUsername, setTempUsername] = useState("");
   const [questionInput, setQuestionInput] = useState("");
@@ -65,6 +68,10 @@ const AskAi: React.FC = () => {
     const stored = localStorage.getItem("tekHistory");
     return stored ? JSON.parse(stored) : [];
   });
+
+  const [typingText, setTypingText] = useState<string | null>(null);
+  const [currentTypingIndex, setCurrentTypingIndex] = useState<number>(0);
+
 
   const suggestions = ["Give me a study tip", "Quiz me now", "Motivate me!"];
 
@@ -132,6 +139,51 @@ const AskAi: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setHistoryVisible(false); // Hide on small screens
+      } else {
+        setHistoryVisible(true); // Show on desktop
+      }
+    };
+
+    handleResize(); // run on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (typingText === null) return;
+
+    if (currentTypingIndex < typingText.length) {
+      const timeout = setTimeout(() => {
+        const currentText = typingText.slice(0, currentTypingIndex + 1);
+        // Replace the last AI message or add a new one if none exists yet
+        setMessages((prevMessages) => {
+          const updated = [...prevMessages];
+          const lastMessage = updated[updated.length - 1];
+
+          if (lastMessage?.sender === "ai") {
+            updated[updated.length - 1] = { sender: "ai", text: currentText };
+          } else {
+            updated.push({ sender: "ai", text: currentText });
+          }
+
+          return updated;
+        });
+
+        setCurrentTypingIndex((prev) => prev + 1);
+      }, 50); // speed of typing
+
+      return () => clearTimeout(timeout);
+    } else {
+      // Typing finished
+      setTypingText(null);
+      setCurrentTypingIndex(0);
+    }
+  }, [typingText, currentTypingIndex]);
+  
   const handleSendQuestion = async (text: string) => {
     if (!text.trim()) return;
 
@@ -173,8 +225,12 @@ const AskAi: React.FC = () => {
 
       const aiText =
         res.data.choices?.[0]?.message?.content ?? "No response received.";
-      const aiMessage: Message = { sender: "ai", text: aiText };
-      setMessages((prev) => [...prev, aiMessage]);
+      // const aiMessage: Message = { sender: "ai", text: aiText };
+      // setMessages((prev) => [...prev, aiMessage]);
+
+      setTypingText(aiText);
+      setCurrentTypingIndex(0);
+
 
       const today = new Date().toDateString();
       const newEntry = { question: text, answer: aiText };
@@ -239,40 +295,48 @@ const AskAi: React.FC = () => {
     <div>
       {showUsernameModal && (
         <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md max-w-sm w-full">
-            <h2 className="text-xl font-semibold mb-4 text-center">Welcome!</h2>
-            <p className="mb-2 text-center">What's your preferred username?</p>
+          <div className="bg-[#1d1c1c] px-6 py-10 rounded-lg shadow-md max-w-sm w-full">
+            <h2 className="text-xl text-[#b0aaaa] font-semibold mb-4 text-center">
+              Welcome!
+            </h2>
+            <p className="mb-2 text-[#b0aaaa] text-center">
+              What's your preferred username?
+            </p>
             <input
               type="text"
               value={tempUsername}
               onChange={(e) => setTempUsername(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              className="w-full p-2 border text-[#b0aaaa] mt-4 border-gray-300 rounded mb-4"
               placeholder="Enter your name"
             />
             <button
               onClick={() => {
                 const trimmed = tempUsername.trim();
                 if (trimmed) {
-                  localStorage.setItem(
-                    "tekUser",
-                    JSON.stringify({ name: trimmed })
-                  );
+                  const newUser = { name: trimmed };
+                  localStorage.setItem("tekUser", JSON.stringify(newUser));
+                  setUserName(trimmed); // ✅ update state immediately
                   setShowUsernameModal(false);
                 }
               }}
-              className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white mt-4 w-full py-2 rounded hover:bg-blue-600"
             >
               Save
             </button>
           </div>
         </div>
       )}
-
-      <div className="flex w-full ">
+      <div className="mt-6 space-y-3 w-full flex justify-center items-center  px-4 sm:px-6 md:px-8">
         {/* Sidebar Toggle */}
 
+        {/* <div
+          className={`fixed top-4  -left-56 z-50 flex bg-[#151515] text-white justify-between w-56 items-center gap-2 p-2  transition-transform duration-300 cursor-pointer ${
+            historyVisible ? "translate-x-56" : "translate-x-16"
+          }`}
+          onClick={() => setHistoryVisible((prev) => !prev)}
+        > */}
         <div
-          className={`fixed top-4 -left-56 z-50 flex bg-[#151515] text-white justify-between w-56 items-center gap-2 p-2  transition-transform duration-300 cursor-pointer ${
+          className={`fixed top-4 -left-56 z-50 flex bg-[#151515] text-white justify-between w-56 items-center gap-2 p-2 rounded-r-lg shadow transition-transform duration-300 cursor-pointer ${
             historyVisible ? "translate-x-56" : "translate-x-16"
           }`}
           onClick={() => setHistoryVisible((prev) => !prev)}
@@ -292,7 +356,7 @@ const AskAi: React.FC = () => {
 
         {/* Sidebar */}
         <aside
-          className={`fixed top-0 left-0 h-screen w-56 mt-10 p-4 pt-16 bg-[#151515] overflow-y-auto z-40 shadow transition-transform duration-500 ease-in-out ${
+          className={`fixed top-0  left-0 h-screen w-56 mt-10 p-4 pt-16 bg-[#151515] overflow-y-auto z-40 shadow transition-transform duration-500 ease-in-out ${
             historyVisible ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -328,20 +392,21 @@ const AskAi: React.FC = () => {
         </aside>
 
         {/* Main Chat Area */}
-        <div className="flex-1 px-4 flex flex-col justify-center h-screen items-center">
+        <div className="flex-1 px-2 md:px-4 flex w-full  flex-col justify-center h-screen items-center">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center mt-12 text-center">
+            <div className="flex flex-col  items-center justify-center mt-12 text-center">
               {/* <img src="/assets/icons/tek-logo.svg" alt="Logo" className="w-38 h-12" /> */}
-              <p className="font-bold text-lg text-white">Hi {userName} 👋!</p>
-              <h6 className="text-xl text-white font-medium">
+              <p className="font-bold text-2xl text-white">Hi {userName} 👋!</p>
+
+              <h6 className="text-2xl text-white font-medium mt-4">
                 How can I help you?
               </h6>
-              <div className="flex gap-3 mt-3">
+              <div className="flex gap-3 mt-3 wrap-break-word">
                 {suggestions.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => handleSendQuestion(s)}
-                    className="bg-gray-100 text-sm px-4 text-black py-2 rounded hover:bg-gray-200"
+                    className="bg-gray-100  text-sm px-2 text-black py-2 rounded hover:bg-gray-200"
                   >
                     {s}
                   </button>
@@ -357,7 +422,7 @@ const AskAi: React.FC = () => {
                 className={`px-4 py-2 rounded-2xl fade-in ${
                   msg.sender === "user"
                     ? "bg-[#3a3838] ml-auto w-[30%] text-gray-400 wrap-break-word"
-                    : "bg-[#1e1c1c] mr-auto text-gray-400"
+                    : "bg-[#1e1c1c] mr-auto text-gray-400 "
                 }`}
               >
                 {msg.text.split("\n").map((line, idx) => (
@@ -368,8 +433,8 @@ const AskAi: React.FC = () => {
               </div>
             ))}
             {loading && (
-              <div className="bg-gray-100 px-4 py-2 rounded-md mr-auto animate-pulse">
-                Typing...
+              <div className="bg-[#1e1c1c] text-white px-4 py-2 rounded-md mr-auto animate-pulse">
+                ...
               </div>
             )}
             <div ref={bottomRef} />
@@ -377,7 +442,7 @@ const AskAi: React.FC = () => {
 
           {/* Input & Actions*/}
 
-          <div className="mt-6 flex items-end w-[50%] justify-center gap-3">
+          <div className="mt-2 md:mt-6 flex items-end w-full md:w-[70%] lg:w-[50%]  justify-center gap-3">
             <div className="relative flex-1">
               <textarea
                 ref={textareaRef}
@@ -445,3 +510,6 @@ const AskAi: React.FC = () => {
 };
 
 export default AskAi;
+
+
+
