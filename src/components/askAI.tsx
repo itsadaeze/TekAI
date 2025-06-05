@@ -139,7 +139,7 @@ const AskAi: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
+      if (window.innerWidth <= 768) {
         setHistoryVisible(false); // Hide on small screens
       } else {
         setHistoryVisible(true); // Show on desktop
@@ -412,13 +412,13 @@ const AskAi: React.FC = () => {
             </div>
           )}
 
-          <div className="mt-6 space-y-3 w-[65%] mx-auto ">
+          <div className="mt-6 space-y-3 w-full md:w-[65%] mx-auto ">
             {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`px-4 py-2 rounded-2xl fade-in ${
                   msg.sender === "user"
-                    ? "bg-[#3a3838] ml-auto w-[30%] text-gray-400 wrap-break-word"
+                    ? "bg-[#3a3838] ml-auto w-[0%] md:w-[30%] text-gray-400 wrap-break-word"
                     : "bg-[#1e1c1c] mr-auto text-gray-400 "
                 }`}
               >
